@@ -22,5 +22,19 @@ object Solitaire extends App:
 
   def placeMarks(w: Int, h: Int): Iterable[Solution] = 
     val start = (w / 2, h / 2)
+    solve(Seq(start), start)
+    
+  def moves(start: Postion, occupied: Seq[Position]): Seq[Position] =
+    val (x, y) = start
+    val possible = Seq((x + 2, y), (x - 2, y), (x, y + 2), (x, y - 2), (x + 1, y + 1), (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1))
+    possible.filter { case (x, y) => x >= 0 && x < w && y >= 0 && y < h && !occupied.contains((x, y)) }
 
-    ???
+  def solve(occupied: Seq[Position], position: Position): Solution =
+    val next = moves(position, occupied)
+    if next.isEmpty && !isValidSolution(occupied) then Seq.empty
+    else if next.isEmpty then occupied
+    else
+      val solutions = for move <- next yield solve(occupied :+ move, move)
+      solutions.find(isValidSolution).getOrElse(Seq.empty)
+
+  def isValidSolution(occupied: Seq[Position]): Boolean = occupied.size == width * height
