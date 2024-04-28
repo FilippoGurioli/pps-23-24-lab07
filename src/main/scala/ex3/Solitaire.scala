@@ -4,8 +4,9 @@ object Solitaire extends App:
   type Position = (Int, Int)
   type Solution = Seq[Position]
 
-  val width: Int = 3
-  val height: Int = 3
+  val width: Int = 7
+  val height: Int = 7
+  val isLogEnabled = false
 
   def render(solution: Seq[Position], width: Int, height: Int): String =
     val reversed = solution.reverse
@@ -17,24 +18,34 @@ object Solitaire extends App:
       yield row.mkString
     rows.mkString("\n")
 
-  for sol <- placeMarks(width,height) do
-    println(render(sol, width, height))
+  val solutions = placeMarks(width, height)
+  println(s"number of solutions: ${solutions.size}")
+  for sol <- solutions do
+    println(render(sol.toSeq, width, height))
 
   def placeMarks(w: Int, h: Int): Iterable[Solution] = 
     val start = (w / 2, h / 2)
-    solve(Seq(start), start)
+    solve(Seq(start), start).filter(!_.isEmpty)
     
-  def moves(start: Postion, occupied: Seq[Position]): Seq[Position] =
+  def solve(occupied: Seq[Position], position: Position): Seq[Solution] =
+    val next = moves(position, occupied)
+    log("current occupied are: ")
+    var occ = ""
+    for o <- occupied yield occ += s" $o"
+    log(occ)
+    log("")
+    if isValidSolution(occupied) then Seq(occupied)
+    else if !next.isEmpty then 
+      for m <- next yield
+        solve(occupied :+ m, m).flatten
+    else Seq.empty
+
+  def moves(start: Position, occupied: Seq[Position]): Seq[Position] =
     val (x, y) = start
     val possible = Seq((x + 2, y), (x - 2, y), (x, y + 2), (x, y - 2), (x + 1, y + 1), (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1))
-    possible.filter { case (x, y) => x >= 0 && x < w && y >= 0 && y < h && !occupied.contains((x, y)) }
-
-  def solve(occupied: Seq[Position], position: Position): Solution =
-    val next = moves(position, occupied)
-    if next.isEmpty && !isValidSolution(occupied) then Seq.empty
-    else if next.isEmpty then occupied
-    else
-      val solutions = for move <- next yield solve(occupied :+ move, move)
-      solutions.find(isValidSolution).getOrElse(Seq.empty)
+    possible.filter { case (x, y) => x >= 0 && x < width && y >= 0 && y < height && !occupied.contains((x, y)) }
 
   def isValidSolution(occupied: Seq[Position]): Boolean = occupied.size == width * height
+
+  def log(message: String) =
+    if isLogEnabled then println(message)
